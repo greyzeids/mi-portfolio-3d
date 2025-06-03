@@ -1,16 +1,18 @@
-// 1. Importar Three.js
+// 1. Importar Three.js y Cannon-es
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
+// Volvemos a necesitar GLTFLoader
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 // --- Configuración Esencial de Three.js ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-    75,
+    75, // Campo de visión
     window.innerWidth / window.innerHeight,
     0.1,
     1000
 );
-camera.position.z = 10;
+camera.position.z = 3; // CAMBIO: Ajustado a 3
 
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector("#bg"),
@@ -18,89 +20,203 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0xeeeeee);
 
 // --- Configuración del Mundo Físico (Cannon-es) ---
 const world = new CANNON.World();
 world.gravity.set(0, 0, 0);
 world.broadphase = new CANNON.SAPBroadphase(world);
 world.allowSleep = true;
-
-// Ajustes del Solver para Colisiones Más Robustas
-world.solver.iterations = 30; // Aumentado de 20 a 30
-world.solver.tolerance = 0.001; // Un valor más pequeño puede mejorar la precisión (default es 0.01)
-// world.solver.contactEquationStiffness = 1e7; // Default es 1e6. Aumentar puede hacer los contactos más "duros".
-// world.solver.contactEquationRelaxation = 4;  // Default es 3. Aumentar puede ayudar a estabilizar.
+world.solver.iterations = 30;
+world.solver.tolerance = 0.001;
 
 const defaultMaterial = new CANNON.Material("default");
 const defaultContactMaterial = new CANNON.ContactMaterial(
     defaultMaterial,
     defaultMaterial,
     {
-        friction: 0.2, // Aumentado ligeramente de 0.1
-        restitution: 0.2, // Reducido ligeramente de 0.3 para menos rebote errático
+        friction: 0.2,
+        restitution: 0.1,
     }
 );
 world.addContactMaterial(defaultContactMaterial);
 world.defaultContactMaterial = defaultContactMaterial;
 
 // --- Arrays para Múltiples Objetos ---
-const donutsVisuals = [];
-const donutsBodies = [];
-const numberOfDonuts = 10;
+const objectsData = [];
+const numberOfObjects = 9;
 
-// --- Crear Múltiples Donuts ---
-const donutGeometry = new THREE.TorusGeometry(0.5, 0.2, 16, 32);
-const donutBaseMaterial = new THREE.MeshStandardMaterial({
-    metalness: 0.3,
-    roughness: 0.4,
-});
-
-console.log("Creando donuts...");
-
-for (let i = 0; i < numberOfDonuts; i++) {
-    const visualMaterial = donutBaseMaterial.clone();
-    visualMaterial.color.setHSL(Math.random(), 0.7, 0.6);
-    const visual = new THREE.Mesh(donutGeometry, visualMaterial);
-
-    const initialSpreadFactor = 8;
-    const posX = (Math.random() - 0.5) * initialSpreadFactor;
-    const posY = (Math.random() - 0.5) * initialSpreadFactor;
-    const posZ = (Math.random() - 0.5) * initialSpreadFactor;
-    visual.position.set(posX, posY, posZ);
-    // console.log(`Donut ${i} visual position: x=${posX.toFixed(2)}, y=${posY.toFixed(2)}, z=${posZ.toFixed(2)}`);
-
-    visual.rotation.set(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-    );
-    scene.add(visual);
-    donutsVisuals.push(visual);
-
-    const vertices = visual.geometry.attributes.position.array;
-    const indices = visual.geometry.index.array;
-    const shape = new CANNON.Trimesh(vertices, indices);
-
-    const body = new CANNON.Body({
-        mass: 1,
-        shape: shape,
-        position: new CANNON.Vec3(posX, posY, posZ),
-        quaternion: new CANNON.Quaternion().copy(visual.quaternion),
-        material: defaultMaterial,
-        linearDamping: 0.8, // Aumentado para más frenado
-        angularDamping: 0.8, // Aumentado para más frenado
-    });
-    world.addBody(body);
-    donutsBodies.push(body);
-}
+// --- Ruta a tu modelo Game Boy ---
+const modelPath = "/models/gameboy.glb";
+let loadedGameboyAsset = null;
 
 // --- Iluminación ---
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
 directionalLight.position.set(5, 10, 7.5);
 directionalLight.castShadow = true;
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.near = 0.5;
+directionalLight.shadow.camera.far = 50;
 scene.add(directionalLight);
+
+const loader = new GLTFLoader();
+
+function loadGameboyModel() {
+    return new Promise((resolve, reject) => {
+        loader.load(
+            modelPath,
+            (gltf) => {
+                console.log(`Modelo cargado: ${modelPath}`);
+                const modelScene = gltf.scene;
+                let geometryForPhysics;
+
+                modelScene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        if (!geometryForPhysics) {
+                            geometryForPhysics = child.geometry;
+                        }
+                    }
+                });
+
+                if (!geometryForPhysics) {
+                    console.warn(
+                        `No se encontró geometría usable en ${modelPath}, usando cubo de fallback para física.`
+                    );
+                    geometryForPhysics = new THREE.BoxGeometry(1, 1, 1);
+                }
+                resolve({
+                    scene: modelScene,
+                    geometry: geometryForPhysics,
+                    originalPath: modelPath,
+                });
+            },
+            undefined,
+            (error) => {
+                console.error(`Error cargando el modelo ${modelPath}:`, error);
+                reject(error);
+            }
+        );
+    });
+}
+
+async function initializeScene() {
+    try {
+        loadedGameboyAsset = await loadGameboyModel();
+    } catch (error) {
+        console.error(
+            "Fallo al cargar el activo principal del Game Boy. La animación no comenzará.",
+            error
+        );
+        return;
+    }
+
+    if (!loadedGameboyAsset) {
+        console.error(
+            "El activo del Game Boy no se cargó. La animación no comenzará."
+        );
+        return;
+    }
+
+    const vertices = loadedGameboyAsset.geometry.attributes.position.array;
+    const indices = loadedGameboyAsset.geometry.index
+        ? loadedGameboyAsset.geometry.index.array
+        : null;
+
+    if (vertices && indices) {
+        loadedGameboyAsset.physicsShape = new CANNON.Trimesh(vertices, indices);
+    } else {
+        const tempVisual = loadedGameboyAsset.scene.clone();
+        const boundingBox = new THREE.Box3().setFromObject(tempVisual);
+        const size = new THREE.Vector3();
+        boundingBox.getSize(size);
+        if (size.x > 0.001 && size.y > 0.001 && size.z > 0.001) {
+            loadedGameboyAsset.physicsShape = new CANNON.Box(
+                new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2)
+            );
+            console.warn(
+                `Usando Box como forma física para ${
+                    loadedGameboyAsset.originalPath
+                } con tamaño: ${size.x.toFixed(2)}, ${size.y.toFixed(
+                    2
+                )}, ${size.z.toFixed(2)} (basado en modelo sin escalar)`
+            );
+        } else {
+            loadedGameboyAsset.geometry.computeBoundingSphere();
+            const radius = loadedGameboyAsset.geometry.boundingSphere.radius;
+            loadedGameboyAsset.physicsShape = new CANNON.Sphere(radius);
+            console.warn(
+                `Usando Sphere como forma física para ${
+                    loadedGameboyAsset.originalPath
+                } (radio: ${radius.toFixed(2)}, basado en modelo sin escalar)`
+            );
+        }
+    }
+
+    createObjectInstances();
+    animate();
+}
+
+function createObjectInstances() {
+    console.log("Creando instancias de Game Boy...");
+    for (let i = 0; i < numberOfObjects; i++) {
+        const visual = loadedGameboyAsset.scene.clone(true);
+
+        const modelScale = 0.2;
+        visual.scale.set(modelScale, modelScale, modelScale);
+
+        const initialSpreadFactor = 3.0;
+        const posX = (Math.random() - 0.5) * initialSpreadFactor;
+        const posY = (Math.random() - 0.5) * initialSpreadFactor;
+        const posZ = (Math.random() - 0.5) * initialSpreadFactor * 0.5;
+        visual.position.set(posX, posY, posZ);
+
+        visual.rotation.set(
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2
+        );
+        scene.add(visual);
+
+        let finalPhysicsShape = loadedGameboyAsset.physicsShape;
+        if (loadedGameboyAsset.physicsShape instanceof CANNON.Box) {
+            const originalHalfExtents =
+                loadedGameboyAsset.physicsShape.halfExtents;
+            finalPhysicsShape = new CANNON.Box(
+                new CANNON.Vec3(
+                    originalHalfExtents.x * modelScale,
+                    originalHalfExtents.y * modelScale,
+                    originalHalfExtents.z * modelScale
+                )
+            );
+        } else if (loadedGameboyAsset.physicsShape instanceof CANNON.Sphere) {
+            finalPhysicsShape = new CANNON.Sphere(
+                loadedGameboyAsset.physicsShape.radius * modelScale
+            );
+        }
+
+        const body = new CANNON.Body({
+            mass: 5 * modelScale,
+            shape: finalPhysicsShape,
+            position: new CANNON.Vec3(posX, posY, posZ),
+            quaternion: new CANNON.Quaternion().copy(visual.quaternion),
+            material: defaultMaterial,
+            linearDamping: 0.2, // CAMBIO: Reducido para un retorno más "flotante" y menos frenado
+            angularDamping: 0.2,
+            angularVelocity: new CANNON.Vec3(
+                (Math.random() - 0.5) * 0.4,
+                (Math.random() - 0.5) * 0.4,
+                (Math.random() - 0.5) * 0.4
+            ),
+        });
+        world.addBody(body);
+        objectsData.push({ visual, body });
+    }
+}
 
 // --- Variables para Interacción del Ratón ---
 const mousePositionNormalized = new THREE.Vector2();
@@ -113,9 +229,9 @@ const planeForMouseIntersection = new THREE.Plane(
 
 // --- Variables para la Atracción al Centro ---
 const centerOfAttraction = new CANNON.Vec3(0, 0, 0);
-const attractionStrength = 0.8; // Reducido aún más
-const idealRestingDistance = 2.0; // Aumentado para darles más espacio
-const minAttractionDistance = 0.5; // Distancia mínima para que la atracción empiece a disminuir/invertirse
+const attractionStrength = 30; // CAMBIO: Ligeramente aumentado para un retorno más claro
+const idealRestingDistance = 2.8; // CAMBIO: Ajustar el radio del "cluster" central
+const minAttractionDistance = 1.2; // CAMBIO: Zona interna, más pequeña que idealRestingDistance
 
 // --- Reloj para el Delta Time ---
 const clock = new THREE.Clock();
@@ -126,50 +242,46 @@ function animate() {
     const deltaTime = clock.getDelta();
 
     if (deltaTime > 0) {
-        // Aumentar maxSubSteps para mayor precisión en la física si deltaTime es grande
-        world.step(1 / 60, deltaTime, 10); // timeStep, deltaTime, maxSubSteps
+        world.step(1 / 60, deltaTime, 10);
     }
 
-    for (let i = 0; i < numberOfDonuts; i++) {
-        const visual = donutsVisuals[i];
-        const body = donutsBodies[i];
+    for (const obj of objectsData) {
+        const visual = obj.visual;
+        const body = obj.body;
 
-        if (body) {
-            // Lógica de Atracción al Centro MODIFICADA
+        if (body && visual) {
+            // Lógica de Atracción al Centro
             const vectorToCenter = new CANNON.Vec3();
             centerOfAttraction.vsub(body.position, vectorToCenter);
             const distanceToCenter = vectorToCenter.length();
             let forceMagnitude = 0;
 
             if (distanceToCenter > idealRestingDistance) {
-                // Si está más lejos de la distancia ideal, atrae
                 forceMagnitude =
                     attractionStrength *
                     (distanceToCenter - idealRestingDistance) *
-                    0.05; // Factor de atracción más suave
+                    0.25; // Factor de atracción un poco más fuerte
             } else if (
                 distanceToCenter < minAttractionDistance &&
-                distanceToCenter > 0.01
+                distanceToCenter > 0.05
             ) {
-                // Si está MUY cerca del centro (menos que minAttractionDistance),
-                // aplicar una PEQUEÑA fuerza de REPULSIÓN del centro.
                 forceMagnitude =
                     -attractionStrength *
                     (minAttractionDistance - distanceToCenter) *
-                    0.2; // Fuerza negativa = repulsión, factor pequeño
+                    0.35; // Repulsión del centro un poco más fuerte
             }
-            // Si está entre minAttractionDistance e idealRestingDistance, la fuerza de atracción es muy débil o nula.
 
-            if (Math.abs(forceMagnitude) > 0.001) {
+            if (Math.abs(forceMagnitude) > 0.0001) {
                 vectorToCenter.normalize();
                 vectorToCenter.scale(forceMagnitude, vectorToCenter);
                 body.applyForce(vectorToCenter, body.position);
             }
 
             // Aplicar Fuerza de Repulsión del Ratón
+            // Esta lógica se aplica a CADA objeto (`body`)
             if (mousePositionWorld.lengthSq() > 0.001) {
-                const mouseRepulsionStrength = 80; // Puede necesitar ser más fuerte ahora
-                const influenceRadius = 3.0;
+                const mouseRepulsionStrength = 100; // CAMBIO: Aumentada para que sea claramente dominante
+                const influenceRadius = 1.0; // CAMBIO: Un radio de influencia un poco mayor
 
                 const mousePosCannon = new CANNON.Vec3(
                     mousePositionWorld.x,
@@ -177,9 +289,10 @@ function animate() {
                     mousePositionWorld.z
                 );
                 const vectorFromMouseToBody = new CANNON.Vec3();
-                body.position.vsub(mousePosCannon, vectorFromMouseToBody);
-
+                body.position.vsub(mousePosCannon, vectorFromMouseToBody); // Vector desde el ratón al cuerpo
                 const distanceToMouse = vectorFromMouseToBody.length();
+
+                // Si el cuerpo está dentro del radio de influencia del ratón, se aplica la fuerza
                 if (
                     distanceToMouse < influenceRadius &&
                     distanceToMouse > 0.01
@@ -187,7 +300,7 @@ function animate() {
                     const repulsionMagnitude =
                         mouseRepulsionStrength *
                         (1 - distanceToMouse / influenceRadius);
-                    vectorFromMouseToBody.normalize();
+                    vectorFromMouseToBody.normalize(); // La dirección ya es correcta (del ratón al cuerpo = empuja lejos del ratón)
                     vectorFromMouseToBody.scale(
                         repulsionMagnitude,
                         vectorFromMouseToBody
@@ -200,25 +313,20 @@ function animate() {
             visual.quaternion.copy(body.quaternion);
         }
     }
-
     renderer.render(scene, camera);
 }
 
-animate();
+initializeScene();
 
-// --- Manejo de Redimensionamiento de Ventana ---
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 });
-
-// --- Event Listener para el Movimiento del Ratón ---
 window.addEventListener("mousemove", (event) => {
     mousePositionNormalized.x = (event.clientX / window.innerWidth) * 2 - 1;
     mousePositionNormalized.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
     raycaster.setFromCamera(mousePositionNormalized, camera);
     const intersects = raycaster.ray.intersectPlane(
         planeForMouseIntersection,
@@ -228,7 +336,6 @@ window.addEventListener("mousemove", (event) => {
         mousePositionWorld.set(0, 0, -Infinity);
     }
 });
-
 window.addEventListener("mouseout", () => {
     mousePositionWorld.set(0, 0, -Infinity);
 });

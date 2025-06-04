@@ -21,7 +21,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.setClearColor(0xeeeeee);
+renderer.setClearColor(0x000033);
 
 // --- Configuración del Mundo Físico (Cannon-es) ---
 const world = new CANNON.World();
@@ -250,7 +250,7 @@ function animate() {
         const body = obj.body;
 
         if (body && visual) {
-            // Lógica de Atracción al Centro
+            // Lógica de Atracción al Centro (SIN CAMBIOS EN ESTA SECCIÓN)
             const vectorToCenter = new CANNON.Vec3();
             centerOfAttraction.vsub(body.position, vectorToCenter);
             const distanceToCenter = vectorToCenter.length();
@@ -277,30 +277,39 @@ function animate() {
                 body.applyForce(vectorToCenter, body.position);
             }
 
-            // Aplicar Fuerza de Repulsión del Ratón
-            // Esta lógica se aplica a CADA objeto (`body`)
+            // --- INICIO DE LA SECCIÓN MODIFICADA PARA LA FUERZA DE REPULSIÓN DEL RATÓN ---
             if (mousePositionWorld.lengthSq() > 0.001) {
-                const mouseRepulsionStrength = 100; // CAMBIO: Aumentada para que sea claramente dominante
-                const influenceRadius = 1.0; // CAMBIO: Un radio de influencia un poco mayor
+                // Comprueba si mousePositionWorld es válido (no -Infinity)
+                const mouseRepulsionStrength = 10;
+                const influenceRadius = 0.8;
 
+                // Se modifica cómo se define la posición Z del cursor para la interacción.
+                // Ahora se usa la posición Z del cuerpo actual (body.position.z).
+                // Esto hace que la 'distanceToMouse' se calcule efectivamente en el plano XY
+                // relativo al objeto, mejorando la consistencia de la interacción
+                // independientemente de la profundidad Z del objeto.
                 const mousePosCannon = new CANNON.Vec3(
                     mousePositionWorld.x,
                     mousePositionWorld.y,
-                    mousePositionWorld.z
+                    body.position.z // <-- CAMBIO IMPORTANTE AQUÍ
                 );
+
                 const vectorFromMouseToBody = new CANNON.Vec3();
-                body.position.vsub(mousePosCannon, vectorFromMouseToBody); // Vector desde el ratón al cuerpo
+                // Calcula el vector desde el punto del ratón (ajustado en Z) hacia el cuerpo
+                body.position.vsub(mousePosCannon, vectorFromMouseToBody);
                 const distanceToMouse = vectorFromMouseToBody.length();
 
                 // Si el cuerpo está dentro del radio de influencia del ratón, se aplica la fuerza
                 if (
                     distanceToMouse < influenceRadius &&
-                    distanceToMouse > 0.01
+                    distanceToMouse > 0.01 // Evita problemas si la distancia es exactamente 0
                 ) {
                     const repulsionMagnitude =
                         mouseRepulsionStrength *
                         (1 - distanceToMouse / influenceRadius);
-                    vectorFromMouseToBody.normalize(); // La dirección ya es correcta (del ratón al cuerpo = empuja lejos del ratón)
+
+                    // La dirección del vector ya es correcta (desde el ratón hacia el cuerpo = empuja lejos del ratón)
+                    vectorFromMouseToBody.normalize();
                     vectorFromMouseToBody.scale(
                         repulsionMagnitude,
                         vectorFromMouseToBody
@@ -308,6 +317,7 @@ function animate() {
                     body.applyForce(vectorFromMouseToBody, body.position);
                 }
             }
+            // --- FIN DE LA SECCIÓN MODIFICADA ---
 
             visual.position.copy(body.position);
             visual.quaternion.copy(body.quaternion);
@@ -338,4 +348,75 @@ window.addEventListener("mousemove", (event) => {
 });
 window.addEventListener("mouseout", () => {
     mousePositionWorld.set(0, 0, -Infinity);
+});
+
+// En tu src/main.js
+
+const cursorDot = document.querySelector("#cursor-dot");
+const cursorRing = document.querySelector("#cursor-ring");
+
+let mouseX = 0;
+let mouseY = 0;
+
+let ringX = 0;
+let ringY = 0;
+
+// Factor de suavizado para el anillo (0.1 es un buen punto de partida, más bajo = más delay)
+const delayFactor = 0.1; // Puedes experimentar con este valor (entre 0 y 1)
+
+// Visibilidad inicial (opcional, para evitar que aparezcan en 0,0)
+cursorDot.style.opacity = "0";
+cursorRing.style.opacity = "0";
+let cursorInitialized = false;
+
+window.addEventListener("mousemove", (event) => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+
+    if (!cursorInitialized) {
+        // Mueve los cursores a la posición inicial del ratón la primera vez
+        ringX = mouseX;
+        ringY = mouseY;
+        cursorDot.style.opacity = "1";
+        cursorRing.style.opacity = "1";
+        cursorInitialized = true;
+    }
+});
+
+function animateCursor() {
+    // Mover el punto central directamente con el ratón
+    if (cursorInitialized) {
+        cursorDot.style.left = `${mouseX}px`;
+        cursorDot.style.top = `${mouseY}px`;
+
+        // Mover el anillo exterior con delay (interpolación lineal)
+        const deltaX = mouseX - ringX;
+        const deltaY = mouseY - ringY;
+
+        ringX += deltaX * delayFactor;
+        ringY += deltaY * delayFactor;
+
+        cursorRing.style.left = `${ringX}px`;
+        cursorRing.style.top = `${ringY}px`;
+    }
+
+    requestAnimationFrame(animateCursor);
+}
+
+// Iniciar la animación del cursor
+animateCursor();
+
+// Opcional: Ocultar el cursor personalizado si el ratón sale de la ventana
+document.addEventListener("mouseleave", () => {
+    if (cursorDot) cursorDot.style.opacity = "0";
+    if (cursorRing) cursorRing.style.opacity = "0";
+    cursorInitialized = false; // Para que se reposicione al volver a entrar
+});
+
+document.addEventListener("mouseenter", () => {
+    // No es estrictamente necesario reactivar la opacidad aquí
+    // ya que el mousemove lo hará, pero podría ser útil si quieres
+    // que aparezca incluso si el mouse entra sin moverse.
+    // if (cursorDot) cursorDot.style.opacity = '1';
+    // if (cursorRing) cursorRing.style.opacity = '1';
 });

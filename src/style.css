@@ -1,0 +1,45 @@
+/* En tu style.css */
+
+html {
+    cursor: none; /* Oculta el cursor por defecto del sistema */
+    /* Si ya tenías un cursor personalizado aquí, elimínalo o coméntalo */
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    /* Asegúrate de que el body o html no tengan un cursor específico que sobreescriba el 'none' */
+}
+
+#cursor-dot,
+#cursor-ring {
+    position: fixed; /* Se posicionan relativo a la ventana del navegador */
+    top: 0;
+    left: 0;
+    pointer-events: none; /* Para que no interfieran con los clics en otros elementos */
+    border-radius: 50%;
+    z-index: 9999; /* Para que estén por encima de otros contenidos */
+    transform: translate(
+        -50%,
+        -50%
+    ); /* Centra el elemento en las coordenadas del ratón */
+    will-change: transform; /* Sugerencia de optimización para navegadores */
+    transition: transform 0.05s linear; /* Transición suave para el punto, opcional */
+}
+
+#cursor-dot {
+    width: 5px; /* Para un diámetro visual de 6px (radio de 3px) */
+    height: 5px; /* Si quieres un punto de 3px de diámetro, usa width: 3px; height: 3px; */
+    background-color: grey;
+    /* Si el punto es muy pequeño, la transición puede no ser necesaria o hacerla más rápida */
+    /* transition: none; */
+}
+
+#cursor-ring {
+    width: 50px;
+    height: 50px;
+    border: 1px solid grey;
+    box-sizing: border-box; /* El borde se incluye dentro del width/height */
+    /* La transición para el anillo la controlaremos con JavaScript para el efecto de delay */
+    transition: none; /* Quitamos la transición CSS para el anillo */
+}

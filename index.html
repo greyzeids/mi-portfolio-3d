@@ -10,9 +10,128 @@
     <body>
         <canvas id="bg"></canvas>
 
-        <script type="module" src="src/main.js"></script>
+        <header class="main-header">
+            <nav>
+                <ul>
+                    <li><a href="#home">Inicio</a></li>
+                    <li><a href="#tech-stack">Tech stack</a></li>
+                    <li><a href="#projects">Proyectos</a></li>
+                    <li><a href="#about-me">Sobre Mí</a></li>
+                    <li><a href="#contact">Contacto</a></li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+                <a
+                    href="https://www.linkedin.com/in/miquelcarnot/"
+                    target="_blank"
+                    aria-label="LinkedIn"
+                    class="social-icon"
+                >
+                    <img
+                        src="/icons/linkedin-white.svg"
+                        alt="LinkedIn"
+                        style="width: 24px; height: 24px"
+                    />
+                </a>
+                <a
+                    href="https://github.com/greyzeids"
+                    target="_blank"
+                    aria-label="GitHub"
+                    class="social-icon"
+                >
+                    <img
+                        src="/icons/github-white.svg"
+                        alt="GitHub"
+                        style="width: 24px; height: 24px"
+                    />
+                </a>
+                <a href="#contact" class="connect-button-header"
+                    >Let's Connect</a
+                >
+            </div>
+        </header>
+
+        <main class="landing-content">
+            <section id="home" class="hero-section full-height-section">
+                <h1>Miquel Carnot Luna</h1>
+                <p class="tagline">
+                    Desarrollador Web Creativo & Especialista en 3D Interactivo
+                </p>
+                <p class="sub-tagline">
+                    Transformando ideas en experiencias web inmersivas.
+                </p>
+            </section>
+
+            <section id="tech-stack" class="content-section">
+                <h2>Stack Tecnológico</h2>
+                <div class="tech-list">
+                    <p>
+                        JavaScript, Three.js, Cannon-es, Vite, HTML5, CSS3,
+                        Git...
+                    </p>
+                    <p>
+                        (Aquí puedes listar tus tecnologías, quizás con iconos)
+                    </p>
+                </div>
+            </section>
+
+            <section id="projects" class="content-section">
+                <h2>Proyectos</h2>
+                <div class="project-showcase">
+                    <h3>Este Portfolio Interactivo</h3>
+                    <p>
+                        Una demostración de desarrollo web 3D utilizando
+                        Three.js y físicas con Cannon-es, con un cursor
+                        personalizado e interacciones dinámicas. ¡Explora la
+                        escena!
+                    </p>
+                </div>
+            </section>
+
+            <section id="about-me" class="content-section">
+                <h2>Sobre Mí</h2>
+                <p>
+                    Soy Miquel, un apasionado desarrollador con un fuerte
+                    interés en crear experiencias web visualmente atractivas e
+                    interactivas. Me encanta explorar las posibilidades del 3D
+                    en el navegador y buscar nuevos desafíos.
+                </p>
+                <p>
+                    <a
+                        href="/ruta/a/tu/CV_Miquel_Carnot_Luna.pdf"
+                        download
+                        class="cta-button"
+                        >Descargar CV</a
+                    >
+                </p>
+            </section>
+
+            <section id="contact" class="content-section">
+                <h2>Contacto / ¡Hablemos!</h2>
+                <p>
+                    Si tienes alguna pregunta, propuesta o simplemente quieres
+                    conectar:
+                </p>
+                <div class="contact-options">
+                    <a href="mailto:tuemail@example.com" class="cta-button"
+                        >Envíame un Email (Let's Connect)</a
+                    >
+                    <p>O encuéntrame en:</p>
+                    <div class="social-links-contact">
+                        <a href="TU_URL_LINKEDIN" target="_blank">LinkedIn</a>
+                        <a href="TU_URL_GITHUB" target="_blank">GitHub</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="main-footer">
+            <p>&copy; 2025 Miquel Carnot Luna</p>
+        </footer>
 
         <div id="cursor-dot"></div>
         <div id="cursor-ring"></div>
+
+        <script type="module" src="src/main.js"></script>
     </body>
 </html>

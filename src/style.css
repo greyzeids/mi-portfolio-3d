@@ -1,45 +1,285 @@
-/* En tu style.css */
+/* ----- ESTILOS GENERALES Y RESET ----- */
+* {
+    box-sizing: border-box; /* Mejor manejo de padding y border */
+}
 
 html {
-    cursor: none; /* Oculta el cursor por defecto del sistema */
-    /* Si ya tenías un cursor personalizado aquí, elimínalo o coméntalo */
+    scroll-behavior: smooth; /* Scroll suave al hacer clic en los enlaces del nav */
+    cursor: none; /* Mantienes tu cursor personalizado ocultando el del sistema */
 }
 
 body {
     margin: 0;
-    overflow: hidden;
-    /* Asegúrate de que el body o html no tengan un cursor específico que sobreescriba el 'none' */
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Elige una fuente bonita */
+    color: #e0e0e0; /* Color de texto claro para contraste con fondo oscuro */
+    background-color: #000033; /* Color de fondo si el canvas tarda en cargar o falla */
+    line-height: 1.6;
+    overflow-x: hidden; /* Previene scroll horizontal indeseado */
 }
 
-#cursor-dot,
-#cursor-ring {
-    position: fixed; /* Se posicionan relativo a la ventana del navegador */
+/* ----- CANVAS DE THREE.JS COMO FONDO ----- */
+#bg {
+    position: fixed;
     top: 0;
     left: 0;
-    pointer-events: none; /* Para que no interfieran con los clics en otros elementos */
+    width: 100vw;
+    height: 100vh;
+    z-index: -10; /* Detrás de todo */
+}
+
+/* ----- CURSOR PERSONALIZADO (Tus estilos existentes) ----- */
+#cursor-dot,
+#cursor-ring {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
     border-radius: 50%;
-    z-index: 9999; /* Para que estén por encima de otros contenidos */
-    transform: translate(
-        -50%,
-        -50%
-    ); /* Centra el elemento en las coordenadas del ratón */
-    will-change: transform; /* Sugerencia de optimización para navegadores */
-    transition: transform 0.05s linear; /* Transición suave para el punto, opcional */
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    will-change: transform;
 }
 
 #cursor-dot {
-    width: 5px; /* Para un diámetro visual de 6px (radio de 3px) */
-    height: 5px; /* Si quieres un punto de 3px de diámetro, usa width: 3px; height: 3px; */
+    width: 5px; /* O el tamaño que hayas elegido */
+    height: 5px;
     background-color: grey;
-    /* Si el punto es muy pequeño, la transición puede no ser necesaria o hacerla más rápida */
-    /* transition: none; */
 }
 
 #cursor-ring {
-    width: 50px;
+    width: 50px; /* O el tamaño que hayas elegido */
     height: 50px;
     border: 1px solid grey;
-    box-sizing: border-box; /* El borde se incluye dentro del width/height */
-    /* La transición para el anillo la controlaremos con JavaScript para el efecto de delay */
-    transition: none; /* Quitamos la transición CSS para el anillo */
+    box-sizing: border-box;
+}
+
+/* ----- BARRA DE NAVEGACIÓN (HEADER) ----- */
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 5%; /* Espaciado responsive */
+    /*     background-color: rgba(
+        10,
+        10,
+        25,
+        0.8
+    ); */ /* Fondo oscuro semi-transparente */
+    z-index: 100;
+    display: flex;
+    justify-content: space-between; /* Logo/Nav a la izquierda, acciones a la derecha */
+    align-items: center;
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+}
+
+.main-header nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 25px; /* Espacio entre elementos del menú */
+}
+
+.main-header nav a {
+    color: #f0f0f0;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem; /* 16px por defecto */
+    transition: color 0.3s ease;
+}
+
+.main-header nav a:hover,
+.main-header nav a.active {
+    /* Para marcar la sección activa con JS si quieres */
+    color: #8cb4ff; /* Un color de acento */
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-actions .social-icon img {
+    width: 22px; /* Ajusta según tus SVGs */
+    height: 22px;
+    vertical-align: middle; /* Para alinear bien si hay texto al lado */
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+.header-actions .social-icon:hover img {
+    opacity: 1;
+}
+
+.connect-button-header {
+    padding: 8px 15px;
+    background-color: #8cb4ff;
+    color: #0a0a19;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.connect-button-header:hover {
+    background-color: #a8c7ff;
+}
+
+/* ----- CONTENEDOR PRINCIPAL DEL CONTENIDO ----- */
+.landing-content {
+    position: relative; /* Para que el z-index funcione sobre el canvas */
+    z-index: 1;
+    padding-top: 100px; /* Espacio para el header fijo, ajusta según altura de tu header */
+    padding-bottom: 80px; /* Espacio para el footer fijo */
+}
+
+/* ----- ESTILOS DE SECCIONES ----- */
+.content-section,
+.hero-section {
+    padding: 60px 5%; /* Espaciado responsive */
+    min-height: 70vh; /* Que cada sección sea sustancial */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.full-height-section {
+    min-height: calc(
+        100vh - 100px - 60px
+    ); /* Altura completa menos header y footer aprox. */
+    /* O simplemente min-height: 100vh; y ajustas el padding del .landing-content para que no se solapen */
+}
+
+.hero-section h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem); /* Tamaño de fuente responsive */
+    margin-bottom: 0.3em;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.hero-section .tagline {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    margin-bottom: 0.5em;
+    color: #c0c0c0;
+    font-weight: 300;
+}
+.hero-section .sub-tagline {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #a0a0a0;
+    max-width: 700px;
+}
+
+.content-section h2 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 40px;
+    color: #ffffff;
+    position: relative;
+    padding-bottom: 10px;
+}
+/* Detalle para el H2 */
+.content-section h2::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: #8cb4ff; /* Color de acento */
+}
+
+.tech-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    max-width: 800px;
+}
+.tech-item {
+    /* Si usas spans o divs para cada tecnología */
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.project-showcase {
+    max-width: 800px;
+}
+.project-showcase h3 {
+    font-size: 1.5rem;
+    color: #8cb4ff;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 12px 28px;
+    background-color: #8cb4ff;
+    color: #0a0a19; /* Texto oscuro para contraste */
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-top: 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 1rem;
+}
+
+.cta-button:hover {
+    background-color: #a8c7ff;
+    transform: translateY(-2px);
+}
+
+.contact-options {
+    margin-top: 20px;
+}
+.social-links-contact a {
+    color: #c0c0c0;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+.social-links-contact a:hover {
+    color: #8cb4ff;
+}
+
+/* ----- FOOTER ----- */
+.main-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 0;
+    /*  background-color: rgba(10, 10, 25, 0.8); */
+    color: #a0a0a0;
+    text-align: center;
+    font-size: 0.85rem;
+    z-index: 100;
+    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); */
+}
+
+/* ----- ESTILOS PARA RESPONSIVIDAD (Ejemplo básico) ----- */
+@media (max-width: 768px) {
+    .main-header nav ul {
+        /* Podrías ocultar el menú y mostrar un botón de hamburguesa */
+        /* O simplemente reducir el gap y tamaño de fuente */
+        gap: 15px;
+    }
+    .main-header nav a {
+        font-size: 0.9rem;
+    }
+    .connect-button-header {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+    .hero-section h1 {
+        /* Se ajustará por clamp, pero puedes afinar más */
+    }
+    /* Más ajustes para móviles aquí */
 }

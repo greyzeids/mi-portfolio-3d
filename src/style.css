@@ -65,12 +65,12 @@ body {
         10,
         25,
         0.8
-    ); */ /* Fondo oscuro semi-transparente */
+    ); */ /* Fondo oscuro semi-transparente - Estilo original comentado */
     z-index: 100;
     display: flex;
     justify-content: space-between; /* Logo/Nav a la izquierda, acciones a la derecha */
     align-items: center;
-    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */ /* Estilo original comentado */
 }
 
 .main-header nav ul {
@@ -102,8 +102,8 @@ body {
 }
 
 .header-actions .social-icon img {
-    width: 22px; /* Ajusta según tus SVGs */
-    height: 22px;
+    width: 24px; /* Movido desde estilos inline HTML */
+    height: 24px; /* Movido desde estilos inline HTML */
     vertical-align: middle; /* Para alinear bien si hay texto al lado */
     opacity: 0.8;
     transition: opacity 0.3s ease;
@@ -199,6 +199,8 @@ body {
     justify-content: center;
     max-width: 800px;
 }
+/* La clase .tech-item está definida abajo pero no se usa en el HTML proporcionado. 
+   Considera usarla o eliminarla si no es necesaria. */
 .tech-item {
     /* Si usas spans o divs para cada tecnología */
     background-color: rgba(255, 255, 255, 0.1);
@@ -256,12 +258,12 @@ body {
     left: 0;
     width: 100%;
     padding: 15px 0;
-    /*  background-color: rgba(10, 10, 25, 0.8); */
+    /*  background-color: rgba(10, 10, 25, 0.8); */ /* Estilo original comentado */
     color: #a0a0a0;
     text-align: center;
     font-size: 0.85rem;
     z-index: 100;
-    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); */
+    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); */ /* Estilo original comentado */
 }
 
 /* ----- ESTILOS PARA RESPONSIVIDAD (Ejemplo básico) ----- */
@@ -282,4 +284,24 @@ body {
         /* Se ajustará por clamp, pero puedes afinar más */
     }
     /* Más ajustes para móviles aquí */
+}
+
+#loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px 40px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 10px;
+    z-index: 10000; /* Por encima de todo */
+    font-size: 1.2rem;
+}
+
+.fade-out {
+    opacity: 0;
+    visibility: hidden; /* Oculta el elemento completamente */
+    pointer-events: none; /* Evita que se pueda interactuar con él */
+    transition: opacity 0.5s ease-out, visibility 0s 0.5s; /* La transición */
 }

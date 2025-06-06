@@ -25,25 +25,19 @@
                     href="https://www.linkedin.com/in/miquelcarnot/"
                     target="_blank"
                     aria-label="LinkedIn"
+                    rel="noopener"
                     class="social-icon"
                 >
-                    <img
-                        src="/icons/linkedin-white.svg"
-                        alt="LinkedIn"
-                        style="width: 24px; height: 24px"
-                    />
+                    <img src="/icons/linkedin-white.svg" alt="LinkedIn" />
                 </a>
                 <a
                     href="https://github.com/greyzeids"
                     target="_blank"
                     aria-label="GitHub"
+                    rel="noopener"
                     class="social-icon"
                 >
-                    <img
-                        src="/icons/github-white.svg"
-                        alt="GitHub"
-                        style="width: 24px; height: 24px"
-                    />
+                    <img src="/icons/github-white.svg" alt="GitHub" />
                 </a>
                 <a href="#contact" class="connect-button-header"
                     >Let's Connect</a
@@ -103,6 +97,7 @@
                         class="cta-button"
                         >Descargar CV</a
                     >
+                    <!-- Asegúrate de reemplazar la ruta del CV -->
                 </p>
             </section>
 
@@ -116,10 +111,16 @@
                     <a href="mailto:tuemail@example.com" class="cta-button"
                         >Envíame un Email (Let's Connect)</a
                     >
+                    <!-- Asegúrate de reemplazar tuemail@example.com -->
                     <p>O encuéntrame en:</p>
+                    <!-- Asegúrate de reemplazar TU_URL_LINKEDIN y TU_URL_GITHUB -->
                     <div class="social-links-contact">
-                        <a href="TU_URL_LINKEDIN" target="_blank">LinkedIn</a>
-                        <a href="TU_URL_GITHUB" target="_blank">GitHub</a>
+                        <a href="TU_URL_LINKEDIN" target="_blank" rel="noopener"
+                            >LinkedIn</a
+                        >
+                        <a href="TU_URL_GITHUB" target="_blank" rel="noopener"
+                            >GitHub</a
+                        >
                     </div>
                 </div>
             </section>
@@ -128,6 +129,10 @@
         <footer class="main-footer">
             <p>&copy; 2025 Miquel Carnot Luna</p>
         </footer>
+
+        <div id="loading-indicator" style="display: none">
+            Cargando Tecnologías...
+        </div>
 
         <div id="cursor-dot"></div>
         <div id="cursor-ring"></div>

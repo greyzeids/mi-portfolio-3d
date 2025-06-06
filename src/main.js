@@ -1,4 +1,3 @@
-// 1. Importar Three.js y Cannon-es
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 // Volvemos a necesitar GLTFLoader
@@ -12,7 +11,7 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 );
-camera.position.z = 3; // CAMBIO: Ajustado a 3
+camera.position.z = 3;
 
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector("#bg"),
@@ -46,6 +45,7 @@ world.defaultContactMaterial = defaultContactMaterial;
 // --- Arrays para Múltiples Objetos ---
 const objectsData = [];
 const numberOfObjects = 9;
+let currentDisplayMode = "gameboys"; // Empezamos con los Game Boys
 
 // --- Ruta a tu modelo Game Boy ---
 const modelPath = "/models/gameboy.glb";
@@ -70,6 +70,7 @@ function loadGameboyModel() {
         loader.load(
             modelPath,
             (gltf) => {
+                // Considerar eliminar console.log en producción
                 console.log(`Modelo cargado: ${modelPath}`);
                 const modelScene = gltf.scene;
                 let geometryForPhysics;
@@ -84,6 +85,7 @@ function loadGameboyModel() {
                 });
 
                 if (!geometryForPhysics) {
+                    // Considerar eliminar console.warn en producción
                     console.warn(
                         `No se encontró geometría usable en ${modelPath}, usando cubo de fallback para física.`
                     );
@@ -97,7 +99,7 @@ function loadGameboyModel() {
             },
             undefined,
             (error) => {
-                console.error(`Error cargando el modelo ${modelPath}:`, error);
+                console.error(`Error cargando el modelo ${modelPath}:`, error); // Mantener para errores críticos
                 reject(error);
             }
         );
@@ -108,6 +110,7 @@ async function initializeScene() {
     try {
         loadedGameboyAsset = await loadGameboyModel();
     } catch (error) {
+        // Mantener para errores críticos
         console.error(
             "Fallo al cargar el activo principal del Game Boy. La animación no comenzará.",
             error
@@ -116,6 +119,7 @@ async function initializeScene() {
     }
 
     if (!loadedGameboyAsset) {
+        // Mantener para errores críticos
         console.error(
             "El activo del Game Boy no se cargó. La animación no comenzará."
         );
@@ -138,6 +142,7 @@ async function initializeScene() {
             loadedGameboyAsset.physicsShape = new CANNON.Box(
                 new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2)
             );
+            // Considerar eliminar console.warn en producción
             console.warn(
                 `Usando Box como forma física para ${
                     loadedGameboyAsset.originalPath
@@ -149,6 +154,7 @@ async function initializeScene() {
             loadedGameboyAsset.geometry.computeBoundingSphere();
             const radius = loadedGameboyAsset.geometry.boundingSphere.radius;
             loadedGameboyAsset.physicsShape = new CANNON.Sphere(radius);
+            // Considerar eliminar console.warn en producción
             console.warn(
                 `Usando Sphere como forma física para ${
                     loadedGameboyAsset.originalPath
@@ -157,16 +163,18 @@ async function initializeScene() {
         }
     }
 
-    createObjectInstances();
+    createGameboyInstances(); // Renombrado de createObjectInstances
     animate();
 }
 
-function createObjectInstances() {
+function createGameboyInstances() {
+    // Renombrado de createObjectInstances
+    // Considerar eliminar console.log en producción
     console.log("Creando instancias de Game Boy...");
     for (let i = 0; i < numberOfObjects; i++) {
         const visual = loadedGameboyAsset.scene.clone(true);
 
-        const modelScale = 0.2;
+        const modelScale = 0.1;
         visual.scale.set(modelScale, modelScale, modelScale);
 
         const initialSpreadFactor = 3.0;
@@ -205,7 +213,7 @@ function createObjectInstances() {
             position: new CANNON.Vec3(posX, posY, posZ),
             quaternion: new CANNON.Quaternion().copy(visual.quaternion),
             material: defaultMaterial,
-            linearDamping: 0.2, // CAMBIO: Reducido para un retorno más "flotante" y menos frenado
+            linearDamping: 0.2,
             angularDamping: 0.2,
             angularVelocity: new CANNON.Vec3(
                 (Math.random() - 0.5) * 0.4,
@@ -229,12 +237,17 @@ const planeForMouseIntersection = new THREE.Plane(
 
 // --- Variables para la Atracción al Centro ---
 const centerOfAttraction = new CANNON.Vec3(0, 0, 0);
-const attractionStrength = 30; // CAMBIO: Ligeramente aumentado para un retorno más claro
-const idealRestingDistance = 2.8; // CAMBIO: Ajustar el radio del "cluster" central
-const minAttractionDistance = 1.2; // CAMBIO: Zona interna, más pequeña que idealRestingDistance
+const attractionStrength = 30;
+const idealRestingDistance = 2.8;
+const minAttractionDistance = 1.2;
 
 // --- Reloj para el Delta Time ---
 const clock = new THREE.Clock();
+
+// --- Vectores reutilizables para cálculos en animate() ---
+const _cannonVec3_1 = new CANNON.Vec3(); // Usado para vectorToTarget, vectorToCenter
+const _cannonVec3_2 = new CANNON.Vec3(); // Usado para vectorFromMouseToBody
+const _cannonMousePos = new CANNON.Vec3(); // Usado para mousePosCannon
 
 // --- Bucle de Animación ---
 function animate() {
@@ -250,79 +263,72 @@ function animate() {
         const body = obj.body;
 
         if (body && visual) {
-            // Lógica de Atracción al Centro (SIN CAMBIOS EN ESTA SECCIÓN)
-            const vectorToCenter = new CANNON.Vec3();
-            centerOfAttraction.vsub(body.position, vectorToCenter);
-            const distanceToCenter = vectorToCenter.length();
-            let forceMagnitude = 0;
+            if (currentDisplayMode === "tech_logos" && obj.targetPosition) {
+                obj.targetPosition.vsub(body.position, _cannonVec3_1);
+                const forceMagnitude = _cannonVec3_1.length() * 5;
+                _cannonVec3_1.normalize();
+                _cannonVec3_1.scale(forceMagnitude, _cannonVec3_1);
+                body.applyForce(_cannonVec3_1, body.position);
+            } else {
+                centerOfAttraction.vsub(body.position, _cannonVec3_1);
+                const distanceToCenter = _cannonVec3_1.length();
+                let forceMagnitude = 0;
 
-            if (distanceToCenter > idealRestingDistance) {
-                forceMagnitude =
-                    attractionStrength *
-                    (distanceToCenter - idealRestingDistance) *
-                    0.25; // Factor de atracción un poco más fuerte
-            } else if (
-                distanceToCenter < minAttractionDistance &&
-                distanceToCenter > 0.05
-            ) {
-                forceMagnitude =
-                    -attractionStrength *
-                    (minAttractionDistance - distanceToCenter) *
-                    0.35; // Repulsión del centro un poco más fuerte
+                if (distanceToCenter > idealRestingDistance) {
+                    forceMagnitude =
+                        attractionStrength *
+                        (distanceToCenter - idealRestingDistance) *
+                        0.25;
+                } else if (
+                    distanceToCenter < minAttractionDistance &&
+                    distanceToCenter > 0.05
+                ) {
+                    forceMagnitude =
+                        -attractionStrength *
+                        (minAttractionDistance - distanceToCenter) *
+                        0.35;
+                }
+
+                if (Math.abs(forceMagnitude) > 0.0001) {
+                    _cannonVec3_1.normalize();
+                    _cannonVec3_1.scale(forceMagnitude, _cannonVec3_1);
+                    body.applyForce(_cannonVec3_1, body.position);
+                }
             }
 
-            if (Math.abs(forceMagnitude) > 0.0001) {
-                vectorToCenter.normalize();
-                vectorToCenter.scale(forceMagnitude, vectorToCenter);
-                body.applyForce(vectorToCenter, body.position);
-            }
-
-            // --- INICIO DE LA SECCIÓN MODIFICADA PARA LA FUERZA DE REPULSIÓN DEL RATÓN ---
             if (mousePositionWorld.lengthSq() > 0.001) {
-                // Comprueba si mousePositionWorld es válido (no -Infinity)
                 const mouseRepulsionStrength = 10;
                 const influenceRadius = 0.8;
-
-                // Se modifica cómo se define la posición Z del cursor para la interacción.
-                // Ahora se usa la posición Z del cuerpo actual (body.position.z).
-                // Esto hace que la 'distanceToMouse' se calcule efectivamente en el plano XY
-                // relativo al objeto, mejorando la consistencia de la interacción
-                // independientemente de la profundidad Z del objeto.
-                const mousePosCannon = new CANNON.Vec3(
+                _cannonMousePos.set(
                     mousePositionWorld.x,
                     mousePositionWorld.y,
-                    body.position.z // <-- CAMBIO IMPORTANTE AQUÍ
+                    body.position.z
                 );
+                body.position.vsub(_cannonMousePos, _cannonVec3_2);
+                const distanceToMouse = _cannonVec3_2.length();
 
-                const vectorFromMouseToBody = new CANNON.Vec3();
-                // Calcula el vector desde el punto del ratón (ajustado en Z) hacia el cuerpo
-                body.position.vsub(mousePosCannon, vectorFromMouseToBody);
-                const distanceToMouse = vectorFromMouseToBody.length();
-
-                // Si el cuerpo está dentro del radio de influencia del ratón, se aplica la fuerza
                 if (
                     distanceToMouse < influenceRadius &&
-                    distanceToMouse > 0.01 // Evita problemas si la distancia es exactamente 0
+                    distanceToMouse > 0.01
                 ) {
                     const repulsionMagnitude =
                         mouseRepulsionStrength *
                         (1 - distanceToMouse / influenceRadius);
-
-                    // La dirección del vector ya es correcta (desde el ratón hacia el cuerpo = empuja lejos del ratón)
-                    vectorFromMouseToBody.normalize();
-                    vectorFromMouseToBody.scale(
-                        repulsionMagnitude,
-                        vectorFromMouseToBody
-                    );
-                    body.applyForce(vectorFromMouseToBody, body.position);
+                    _cannonVec3_2.normalize();
+                    _cannonVec3_2.scale(repulsionMagnitude, _cannonVec3_2);
+                    body.applyForce(_cannonVec3_2, body.position);
                 }
             }
-            // --- FIN DE LA SECCIÓN MODIFICADA ---
 
             visual.position.copy(body.position);
             visual.quaternion.copy(body.quaternion);
+
+            if (currentDisplayMode === "tech_logos") {
+                visual.lookAt(camera.position);
+            }
         }
     }
+
     renderer.render(scene, camera);
 }
 
@@ -350,21 +356,15 @@ window.addEventListener("mouseout", () => {
     mousePositionWorld.set(0, 0, -Infinity);
 });
 
-// En tu src/main.js
-
 const cursorDot = document.querySelector("#cursor-dot");
 const cursorRing = document.querySelector("#cursor-ring");
+const heroSection = document.getElementById("home"); // Global heroSection
 
 let mouseX = 0;
 let mouseY = 0;
-
 let ringX = 0;
 let ringY = 0;
-
-// Factor de suavizado para el anillo (0.1 es un buen punto de partida, más bajo = más delay)
-const delayFactor = 0.1; // Puedes experimentar con este valor (entre 0 y 1)
-
-// Visibilidad inicial (opcional, para evitar que aparezcan en 0,0)
+const delayFactor = 0.1;
 cursorDot.style.opacity = "0";
 cursorRing.style.opacity = "0";
 let cursorInitialized = false;
@@ -372,9 +372,7 @@ let cursorInitialized = false;
 window.addEventListener("mousemove", (event) => {
     mouseX = event.clientX;
     mouseY = event.clientY;
-
     if (!cursorInitialized) {
-        // Mueve los cursores a la posición inicial del ratón la primera vez
         ringX = mouseX;
         ringY = mouseY;
         cursorDot.style.opacity = "1";
@@ -384,39 +382,219 @@ window.addEventListener("mousemove", (event) => {
 });
 
 function animateCursor() {
-    // Mover el punto central directamente con el ratón
     if (cursorInitialized) {
         cursorDot.style.left = `${mouseX}px`;
         cursorDot.style.top = `${mouseY}px`;
-
-        // Mover el anillo exterior con delay (interpolación lineal)
         const deltaX = mouseX - ringX;
         const deltaY = mouseY - ringY;
-
         ringX += deltaX * delayFactor;
         ringY += deltaY * delayFactor;
-
         cursorRing.style.left = `${ringX}px`;
         cursorRing.style.top = `${ringY}px`;
     }
-
     requestAnimationFrame(animateCursor);
 }
-
-// Iniciar la animación del cursor
 animateCursor();
 
-// Opcional: Ocultar el cursor personalizado si el ratón sale de la ventana
 document.addEventListener("mouseleave", () => {
     if (cursorDot) cursorDot.style.opacity = "0";
     if (cursorRing) cursorRing.style.opacity = "0";
-    cursorInitialized = false; // Para que se reposicione al volver a entrar
+    cursorInitialized = false;
 });
 
 document.addEventListener("mouseenter", () => {
-    // No es estrictamente necesario reactivar la opacidad aquí
-    // ya que el mousemove lo hará, pero podría ser útil si quieres
-    // que aparezca incluso si el mouse entra sin moverse.
-    // if (cursorDot) cursorDot.style.opacity = '1';
-    // if (cursorRing) cursorRing.style.opacity = '1';
+    // Opacity handled by mousemove
 });
+
+const techLogoUrls = [
+    "/models/tech-logos/react.glb",
+    "/models/tech-logos/html5.glb",
+    "/models/tech-logos/css3.glb",
+];
+const loadedTechLogoAssets = [];
+let areTechLogosLoaded = false;
+let isTransitioning = false;
+
+const loadingIndicator = document.getElementById("loading-indicator");
+const showLoadingIndicator = () => (loadingIndicator.style.display = "block");
+const hideLoadingIndicator = () => (loadingIndicator.style.display = "none");
+
+function loadModel(url) {
+    return new Promise((resolve, reject) => {
+        loader.load(url, (data) => resolve(data.scene), undefined, reject);
+    });
+}
+
+async function preloadTechLogos() {
+    if (areTechLogosLoaded) return Promise.resolve();
+    showLoadingIndicator();
+    try {
+        const loadedScenes = await Promise.all(
+            techLogoUrls.map((url) => loadModel(url))
+        );
+        loadedTechLogoAssets.push(...loadedScenes);
+        areTechLogosLoaded = true;
+        // Considerar eliminar console.log en producción
+        console.log("Todos los logos de tecnología han sido cargados.");
+    } catch (error) {
+        // Mantener para errores críticos
+        console.error("Fallo al cargar uno o más modelos de logos.", error);
+    } finally {
+        hideLoadingIndicator();
+    }
+}
+
+function explodeAndRemoveGameboys() {
+    // Considerar eliminar console.log en producción
+    console.log("Iniciando explosión de Game Boys...");
+    if (heroSection) heroSection.classList.add("fade-out");
+
+    objectsData.forEach((obj) => {
+        const body = obj.body;
+        const forceMagnitude = 80 + Math.random() * 40;
+        const direction = new CANNON.Vec3().copy(body.position);
+        if (direction.lengthSquared() < 0.0001) {
+            direction.set(
+                Math.random() - 0.5,
+                Math.random() - 0.5,
+                Math.random() - 0.5
+            );
+        }
+        direction.normalize();
+        body.angularVelocity.set(
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 20
+        );
+        body.applyImpulse(direction.scale(forceMagnitude), body.position);
+    });
+
+    setTimeout(() => {
+        // Considerar eliminar console.log en producción
+        console.log(
+            "Eliminando Game Boys y preparando la creación de logos..."
+        );
+        objectsData.forEach((obj) => {
+            world.removeBody(obj.body);
+            scene.remove(obj.visual);
+        });
+        objectsData.length = 0;
+        spawnTechLogos(); // currentDisplayMode should already be "tech_logos"
+        setTimeout(() => {
+            isTransitioning = false;
+        }, 500);
+    }, 1800);
+}
+
+function spawnTechLogos() {
+    // Considerar eliminar console.log en producción
+    console.log(
+        "Creando instancias de logos de tecnología en un layout de grilla..."
+    );
+    const numberOfColumns = 5;
+    const spacingX = 2.0;
+    const spacingY = 2.0;
+    const normalizedLogoSize = 1.5;
+    const numberOfLogos = loadedTechLogoAssets.length;
+    if (numberOfLogos === 0) return;
+
+    const numberOfRows = Math.ceil(numberOfLogos / numberOfColumns);
+    const gridWidth = (Math.min(numberOfLogos, numberOfColumns) - 1) * spacingX;
+    const gridHeight = (numberOfRows - 1) * spacingY;
+
+    loadedTechLogoAssets.forEach((logoAssetScene, i) => {
+        const visual = new THREE.Group();
+        const logoModelInstance = logoAssetScene.clone();
+        normalizeAndCenterModel(logoModelInstance, normalizedLogoSize);
+        visual.add(logoModelInstance);
+        scene.add(visual);
+
+        const col = i % numberOfColumns;
+        const row = Math.floor(i / numberOfColumns);
+        const targetX = col * spacingX - gridWidth / 2;
+        const targetY = -(row * spacingY) + gridHeight / 2;
+        const targetZ = 0;
+        const targetPosition = new CANNON.Vec3(targetX, targetY, targetZ);
+
+        const spread = 12;
+        const initialX = (Math.random() - 0.5) * spread;
+        const initialY = (Math.random() - 0.5) * spread;
+        const initialZ = (Math.random() - 0.5) * spread;
+        const initialPosition = new CANNON.Vec3(initialX, initialY, initialZ);
+        visual.position.copy(initialPosition);
+
+        const logoShape = new CANNON.Sphere(normalizedLogoSize / 2);
+        const body = new CANNON.Body({
+            mass: 1,
+            shape: logoShape,
+            position: initialPosition,
+            fixedRotation: true,
+            angularDamping: 0.8,
+            linearDamping: 0.5,
+            material: defaultMaterial,
+        });
+        world.addBody(body);
+        objectsData.push({ visual, body, targetPosition });
+    });
+}
+
+function normalizeAndCenterModel(model, targetSize) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scaleFactor = maxDim === 0 ? 1 : targetSize / maxDim;
+    model.position.sub(center);
+    model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    model.position.multiplyScalar(scaleFactor);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const homeLink = document.querySelector('a[href="#home"]');
+    const techStackLinkFromDOM = document.querySelector(
+        'a[href="#tech-stack"]'
+    );
+
+    if (techStackLinkFromDOM) {
+        techStackLinkFromDOM.addEventListener("click", (e) => {
+            e.preventDefault();
+            switchToTechLogos();
+        });
+    }
+
+    if (homeLink) {
+        homeLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            switchToGameboys();
+        });
+    }
+});
+
+async function switchToTechLogos() {
+    if (currentDisplayMode === "tech_logos" || isTransitioning) return;
+    isTransitioning = true;
+    // heroSection es la variable global
+    if (heroSection) heroSection.classList.add("fade-out");
+    await preloadTechLogos();
+    currentDisplayMode = "tech_logos"; // Cambiar modo ANTES de explotar/spawnear
+    explodeAndRemoveGameboys();
+}
+
+function switchToGameboys() {
+    if (currentDisplayMode === "gameboys" || isTransitioning) return;
+    isTransitioning = true;
+    currentDisplayMode = "gameboys";
+    // heroSection es la variable global
+    if (heroSection) heroSection.classList.remove("fade-out");
+    objectsData.forEach((obj) => {
+        world.removeBody(obj.body);
+        scene.remove(obj.visual);
+    });
+    objectsData.length = 0;
+    createGameboyInstances(); // Llamada a la función renombrada
+    setTimeout(() => {
+        isTransitioning = false;
+    }, 500);
+}

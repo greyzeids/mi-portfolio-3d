@@ -2,6 +2,8 @@
 
 ¡Bienvenido/a a mi portfolio 3D interactivo! Este proyecto es una demostración de mis habilidades en desarrollo web, gráficos 3D y simulación de físicas utilizando tecnologías modernas como Three.js y Cannon-es.
 
+Puedes visualizar este repositorio aquí: https://mi-portfolio-3d.vercel.app/
+
 ## 🚀 Tecnologías Utilizadas
 
 -   **Three.js:** Para la creación y renderizado de la escena 3D.

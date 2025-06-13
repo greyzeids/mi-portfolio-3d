@@ -250,6 +250,7 @@ const _cannonVec3_2 = new CANNON.Vec3(); // Usado para vectorFromMouseToBody
 const _cannonMousePos = new CANNON.Vec3(); // Usado para mousePosCannon
 
 // --- Bucle de Animación ---
+// --- Bucle de Animación ---
 function animate() {
     requestAnimationFrame(animate);
     const deltaTime = clock.getDelta();
@@ -263,60 +264,62 @@ function animate() {
         const body = obj.body;
 
         if (body && visual) {
-            if (currentDisplayMode === "tech_logos" && obj.targetPosition) {
-                obj.targetPosition.vsub(body.position, _cannonVec3_1);
-                const forceMagnitude = _cannonVec3_1.length() * 5;
-                _cannonVec3_1.normalize();
-                _cannonVec3_1.scale(forceMagnitude, _cannonVec3_1);
-                body.applyForce(_cannonVec3_1, body.position);
-            } else {
-                centerOfAttraction.vsub(body.position, _cannonVec3_1);
-                const distanceToCenter = _cannonVec3_1.length();
-                let forceMagnitude = 0;
-
-                if (distanceToCenter > idealRestingDistance) {
-                    forceMagnitude =
-                        attractionStrength *
-                        (distanceToCenter - idealRestingDistance) *
-                        0.25;
-                } else if (
-                    distanceToCenter < minAttractionDistance &&
-                    distanceToCenter > 0.05
-                ) {
-                    forceMagnitude =
-                        -attractionStrength *
-                        (minAttractionDistance - distanceToCenter) *
-                        0.35;
-                }
-
-                if (Math.abs(forceMagnitude) > 0.0001) {
+            if (!isTransitioning) {
+                if (currentDisplayMode === "tech_logos" && obj.targetPosition) {
+                    obj.targetPosition.vsub(body.position, _cannonVec3_1);
+                    const forceMagnitude = _cannonVec3_1.length() * 4;
                     _cannonVec3_1.normalize();
                     _cannonVec3_1.scale(forceMagnitude, _cannonVec3_1);
                     body.applyForce(_cannonVec3_1, body.position);
+                } else {
+                    centerOfAttraction.vsub(body.position, _cannonVec3_1);
+                    const distanceToCenter = _cannonVec3_1.length();
+                    let forceMagnitude = 0;
+
+                    if (distanceToCenter > idealRestingDistance) {
+                        forceMagnitude =
+                            attractionStrength *
+                            (distanceToCenter - idealRestingDistance) *
+                            0.25;
+                    } else if (
+                        distanceToCenter < minAttractionDistance &&
+                        distanceToCenter > 0.05
+                    ) {
+                        forceMagnitude =
+                            -attractionStrength *
+                            (minAttractionDistance - distanceToCenter) *
+                            0.35;
+                    }
+
+                    if (Math.abs(forceMagnitude) > 0.0001) {
+                        _cannonVec3_1.normalize();
+                        _cannonVec3_1.scale(forceMagnitude, _cannonVec3_1);
+                        body.applyForce(_cannonVec3_1, body.position);
+                    }
                 }
-            }
 
-            if (mousePositionWorld.lengthSq() > 0.001) {
-                const mouseRepulsionStrength = 10;
-                const influenceRadius = 0.8;
-                _cannonMousePos.set(
-                    mousePositionWorld.x,
-                    mousePositionWorld.y,
-                    body.position.z
-                );
-                body.position.vsub(_cannonMousePos, _cannonVec3_2);
-                const distanceToMouse = _cannonVec3_2.length();
+                if (mousePositionWorld.lengthSq() > 0.001) {
+                    const mouseRepulsionStrength = 10;
+                    const influenceRadius = 0.8;
+                    _cannonMousePos.set(
+                        mousePositionWorld.x,
+                        mousePositionWorld.y,
+                        body.position.z
+                    );
+                    body.position.vsub(_cannonMousePos, _cannonVec3_2);
+                    const distanceToMouse = _cannonVec3_2.length();
 
-                if (
-                    distanceToMouse < influenceRadius &&
-                    distanceToMouse > 0.01
-                ) {
-                    const repulsionMagnitude =
-                        mouseRepulsionStrength *
-                        (1 - distanceToMouse / influenceRadius);
-                    _cannonVec3_2.normalize();
-                    _cannonVec3_2.scale(repulsionMagnitude, _cannonVec3_2);
-                    body.applyForce(_cannonVec3_2, body.position);
+                    if (
+                        distanceToMouse < influenceRadius &&
+                        distanceToMouse > 0.01
+                    ) {
+                        const repulsionMagnitude =
+                            mouseRepulsionStrength *
+                            (1 - distanceToMouse / influenceRadius);
+                        _cannonVec3_2.normalize();
+                        _cannonVec3_2.scale(repulsionMagnitude, _cannonVec3_2);
+                        body.applyForce(_cannonVec3_2, body.position);
+                    }
                 }
             }
 
@@ -445,13 +448,16 @@ async function preloadTechLogos() {
 }
 
 function explodeAndRemoveGameboys() {
-    // Considerar eliminar console.log en producción
     console.log("Iniciando explosión de Game Boys...");
     if (heroSection) heroSection.classList.add("fade-out");
 
     objectsData.forEach((obj) => {
         const body = obj.body;
-        const forceMagnitude = 80 + Math.random() * 40;
+
+        const forceMagnitude = 12 + Math.random() * 10;
+
+        const angularForce = 6;
+
         const direction = new CANNON.Vec3().copy(body.position);
         if (direction.lengthSquared() < 0.0001) {
             direction.set(
@@ -461,16 +467,16 @@ function explodeAndRemoveGameboys() {
             );
         }
         direction.normalize();
+
         body.angularVelocity.set(
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 20
+            (Math.random() - 0.5) * angularForce,
+            (Math.random() - 0.5) * angularForce,
+            (Math.random() - 0.5) * angularForce
         );
         body.applyImpulse(direction.scale(forceMagnitude), body.position);
     });
 
     setTimeout(() => {
-        // Considerar eliminar console.log en producción
         console.log(
             "Eliminando Game Boys y preparando la creación de logos..."
         );
@@ -479,7 +485,7 @@ function explodeAndRemoveGameboys() {
             scene.remove(obj.visual);
         });
         objectsData.length = 0;
-        spawnTechLogos(); // currentDisplayMode should already be "tech_logos"
+        spawnTechLogos();
         setTimeout(() => {
             isTransitioning = false;
         }, 500);
@@ -487,7 +493,6 @@ function explodeAndRemoveGameboys() {
 }
 
 function spawnTechLogos() {
-    // Considerar eliminar console.log en producción
     console.log(
         "Creando instancias de logos de tecnología en un layout de grilla..."
     );
@@ -501,6 +506,8 @@ function spawnTechLogos() {
     const numberOfRows = Math.ceil(numberOfLogos / numberOfColumns);
     const gridWidth = (Math.min(numberOfLogos, numberOfColumns) - 1) * spacingX;
     const gridHeight = (numberOfRows - 1) * spacingY;
+
+    const spawnRadius = 30;
 
     loadedTechLogoAssets.forEach((logoAssetScene, i) => {
         const visual = new THREE.Group();
@@ -516,21 +523,31 @@ function spawnTechLogos() {
         const targetZ = 0;
         const targetPosition = new CANNON.Vec3(targetX, targetY, targetZ);
 
-        const spread = 12;
-        const initialX = (Math.random() - 0.5) * spread;
-        const initialY = (Math.random() - 0.5) * spread;
-        const initialZ = (Math.random() - 0.5) * spread;
-        const initialPosition = new CANNON.Vec3(initialX, initialY, initialZ);
+        const randomDirection = new THREE.Vector3(
+            Math.random() - 0.5,
+            Math.random() - 0.5,
+            Math.random() - 0.5
+        );
+
+        const initialPosition = randomDirection
+            .normalize()
+            .multiplyScalar(spawnRadius);
         visual.position.copy(initialPosition);
+
+        const initialPositionCannon = new CANNON.Vec3(
+            initialPosition.x,
+            initialPosition.y,
+            initialPosition.z
+        );
 
         const logoShape = new CANNON.Sphere(normalizedLogoSize / 2);
         const body = new CANNON.Body({
             mass: 1,
             shape: logoShape,
-            position: initialPosition,
+            position: initialPositionCannon,
             fixedRotation: true,
             angularDamping: 0.8,
-            linearDamping: 0.5,
+            linearDamping: 0.85,
             material: defaultMaterial,
         });
         world.addBody(body);
@@ -552,13 +569,12 @@ function normalizeAndCenterModel(model, targetSize) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- MANEJADORES DE CLIC PARA NAVEGACIÓN ENTRE ESCENAS ---
     const homeLink = document.querySelector('a[href="#home"]');
-    const techStackLinkFromDOM = document.querySelector(
-        'a[href="#tech-stack"]'
-    );
+    const techStackLink = document.querySelector('a[href="#tech-stack"]');
 
-    if (techStackLinkFromDOM) {
-        techStackLinkFromDOM.addEventListener("click", (e) => {
+    if (techStackLink) {
+        techStackLink.addEventListener("click", (e) => {
             e.preventDefault();
             switchToTechLogos();
         });
@@ -570,15 +586,65 @@ document.addEventListener("DOMContentLoaded", () => {
             switchToGameboys();
         });
     }
+
+    // --- LÓGICA FINAL DEL GLITCH INTERACTIVO ---
+
+    // 1. Referencias a los elementos del DOM
+    const navContainer = document.querySelector(".main-header nav");
+    const navLinks = document.querySelectorAll(".nav-glitch");
+    let idleGlitchIntervalId = null; // Variable para guardar el ID del intervalo
+
+    // 2. Función que INICIA el ciclo de glitches ambientales
+    function startIdleGlitch() {
+        // Nos aseguramos de no tener intervalos duplicados
+        if (idleGlitchIntervalId) clearInterval(idleGlitchIntervalId);
+
+        idleGlitchIntervalId = setInterval(() => {
+            // Quitamos la clase de cualquier link que la tuviera
+            navLinks.forEach((link) =>
+                link.classList.remove("is-glitching-idle")
+            );
+
+            // Seleccionamos un enlace al azar
+            const randomIndex = Math.floor(Math.random() * navLinks.length);
+            const randomLink = navLinks[randomIndex];
+
+            if (randomLink) {
+                randomLink.classList.add("is-glitching-idle");
+                setTimeout(() => {
+                    randomLink.classList.remove("is-glitching-idle");
+                }, 1500); // Duración del efecto
+            }
+        }, 6000); // Frecuencia del efecto
+    }
+
+    // 3. Función que DETIENE el ciclo y limpia cualquier glitch activo
+    function stopIdleGlitch() {
+        clearInterval(idleGlitchIntervalId);
+        navLinks.forEach((link) => link.classList.remove("is-glitching-idle"));
+    }
+
+    // 4. Event Listeners para el ratón
+    // Solo los añadimos si encontramos el contenedor de navegación
+    if (navContainer && navLinks.length > 0) {
+        // Cuando el ratón ENTRA en el área del nav, detenemos el glitch ambiental.
+        navContainer.addEventListener("mouseenter", stopIdleGlitch);
+
+        // Cuando el ratón SALE del área del nav, lo reactivamos.
+        navContainer.addEventListener("mouseleave", startIdleGlitch);
+
+        // 5. Iniciar el efecto por primera vez al cargar la página
+        startIdleGlitch();
+    }
 });
 
+// (Tus funciones para cambiar de escena se mantienen igual)
 async function switchToTechLogos() {
     if (currentDisplayMode === "tech_logos" || isTransitioning) return;
     isTransitioning = true;
-    // heroSection es la variable global
     if (heroSection) heroSection.classList.add("fade-out");
     await preloadTechLogos();
-    currentDisplayMode = "tech_logos"; // Cambiar modo ANTES de explotar/spawnear
+    currentDisplayMode = "tech_logos";
     explodeAndRemoveGameboys();
 }
 
@@ -586,14 +652,13 @@ function switchToGameboys() {
     if (currentDisplayMode === "gameboys" || isTransitioning) return;
     isTransitioning = true;
     currentDisplayMode = "gameboys";
-    // heroSection es la variable global
     if (heroSection) heroSection.classList.remove("fade-out");
     objectsData.forEach((obj) => {
         world.removeBody(obj.body);
         scene.remove(obj.visual);
     });
     objectsData.length = 0;
-    createGameboyInstances(); // Llamada a la función renombrada
+    createGameboyInstances();
     setTimeout(() => {
         isTransitioning = false;
     }, 500);

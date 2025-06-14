@@ -1,117 +1,79 @@
-/* ----- ESTILOS GENERALES Y RESET ----- */
-* {
-    box-sizing: border-box; /* Mejor manejo de padding y border */
-}
+/* style.css - Apto para Múltiples Páginas (CON CORRECCIÓN DE TRANSPARENCIA) */
 
-html {
-    scroll-behavior: smooth; /* Scroll suave al hacer clic en los enlaces del nav */
-    cursor: none; /* Mantienes tu cursor personalizado ocultando el del sistema */
+/* ----- ESTILOS GLOBALES Y RESET ----- */
+* {
+    box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Elige una fuente bonita */
-    color: #e0e0e0; /* Color de texto claro para contraste con fondo oscuro */
-    background-color: #000033; /* Color de fondo si el canvas tarda en cargar o falla */
-    line-height: 1.6;
-    overflow-x: hidden; /* Previene scroll horizontal indeseado */
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #000033;
+    color: #e0e0e0;
 }
 
-/* ----- CANVAS DE THREE.JS COMO FONDO ----- */
+/* ----- ESTILOS ESPECÍFICOS POR TIPO DE PÁGINA ----- */
+body.game-body {
+    overflow: hidden;
+    height: 100vh;
+}
+body.content-body {
+    overflow-y: scroll;
+}
+
+/* ----- CANVAS DE THREE.JS (Solo visible en game-body) ----- */
 #bg {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -10; /* Detrás de todo */
+    z-index: -1;
 }
 
-/* ----- CURSOR PERSONALIZADO (Tus estilos existentes) ----- */
-#cursor-dot,
-#cursor-ring {
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    border-radius: 50%;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    will-change: transform;
-}
-
-#cursor-dot {
-    width: 5px; /* O el tamaño que hayas elegido */
-    height: 5px;
-    background-color: grey;
-}
-
-#cursor-ring {
-    width: 50px; /* O el tamaño que hayas elegido */
-    height: 50px;
-    border: 1px solid grey;
-    box-sizing: border-box;
-}
-
-/* ----- BARRA DE NAVEGACIÓN (HEADER) ----- */
+/* ----- HEADER (Compartido en todas las páginas) ----- */
 .main-header {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 15px 5%; /* Espaciado responsive */
-    /*     background-color: rgba(
-        10,
-        10,
-        25,
-        0.8
-    ); */ /* Fondo oscuro semi-transparente - Estilo original comentado */
+    padding: 15px 5%;
     z-index: 100;
     display: flex;
-    justify-content: space-between; /* Logo/Nav a la izquierda, acciones a la derecha */
+    justify-content: space-between;
     align-items: center;
-    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */ /* Estilo original comentado */
+    /* MODIFICACIÓN 1: Fondo y filtro eliminados para transparencia total */
 }
-
 .main-header nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
-    gap: 25px; /* Espacio entre elementos del menú */
+    gap: 25px;
 }
-
 .main-header nav a {
     color: #f0f0f0;
     text-decoration: none;
     font-weight: 500;
-    font-size: 1rem; /* 16px por defecto */
+    font-size: 1rem;
     transition: color 0.3s ease;
 }
-
 .main-header nav a:hover,
 .main-header nav a.active {
-    /* Para marcar la sección activa con JS si quieres */
-    color: #8cb4ff; /* Un color de acento */
+    color: #8cb4ff;
 }
-
 .header-actions {
     display: flex;
     align-items: center;
     gap: 15px;
 }
-
 .header-actions .social-icon img {
-    width: 24px; /* Movido desde estilos inline HTML */
-    height: 24px; /* Movido desde estilos inline HTML */
-    vertical-align: middle; /* Para alinear bien si hay texto al lado */
+    width: 24px;
+    height: 24px;
     opacity: 0.8;
     transition: opacity 0.3s ease;
 }
 .header-actions .social-icon:hover img {
     opacity: 1;
 }
-
 .connect-button-header {
     padding: 8px 15px;
     background-color: #8cb4ff;
@@ -120,193 +82,42 @@ body {
     border-radius: 5px;
     font-weight: bold;
     font-size: 0.9rem;
-    transition: background-color 0.3s ease;
 }
-
 .connect-button-header:hover {
     background-color: #a8c7ff;
 }
 
-/* ----- CONTENEDOR PRINCIPAL DEL CONTENIDO ----- */
-.landing-content {
-    position: relative; /* Para que el z-index funcione sobre el canvas */
-    z-index: 1;
-    padding-top: 100px; /* Espacio para el header fijo, ajusta según altura de tu header */
-    padding-bottom: 80px; /* Espacio para el footer fijo */
+/* ----- CONTENEDOR PARA PÁGINAS DE TEXTO (about.html, etc.) ----- */
+.content-container {
+    padding: 120px 5% 60px;
+    max-width: 800px;
+    margin: 0 auto;
 }
-
-/* ----- ESTILOS DE SECCIONES ----- */
-.content-section,
+.content-container section {
+    margin-bottom: 60px;
+}
 .hero-section {
-    padding: 60px 5%; /* Espaciado responsive */
-    min-height: 70vh; /* Que cada sección sea sustancial */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
     text-align: center;
+    margin-bottom: 80px;
 }
-
-.full-height-section {
-    min-height: calc(
-        100vh - 100px - 60px
-    ); /* Altura completa menos header y footer aprox. */
-    /* O simplemente min-height: 100vh; y ajustas el padding del .landing-content para que no se solapen */
-}
-
 .hero-section h1 {
-    font-size: clamp(2.5rem, 6vw, 4.5rem); /* Tamaño de fuente responsive */
-    margin-bottom: 0.3em;
-    color: #ffffff;
-    font-weight: 700;
+    font-size: 3rem;
 }
-
-.hero-section .tagline {
-    font-size: clamp(1.2rem, 3vw, 1.8rem);
-    margin-bottom: 0.5em;
-    color: #c0c0c0;
-    font-weight: 300;
-}
-.hero-section .sub-tagline {
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
-    color: #a0a0a0;
-    max-width: 700px;
-}
-
-.content-section h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    margin-bottom: 40px;
-    color: #ffffff;
-    position: relative;
-    padding-bottom: 10px;
-}
-/* Detalle para el H2 */
-.content-section h2::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background-color: #8cb4ff; /* Color de acento */
-}
-
-.tech-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    justify-content: center;
-    max-width: 800px;
-}
-/* La clase .tech-item está definida abajo pero no se usa en el HTML proporcionado. 
-   Considera usarla o eliminarla si no es necesaria. */
-.tech-item {
-    /* Si usas spans o divs para cada tecnología */
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 0.9rem;
-}
-
-.project-showcase {
-    max-width: 800px;
-}
-.project-showcase h3 {
+.tagline {
     font-size: 1.5rem;
-    color: #8cb4ff;
-    margin-top: 30px;
-    margin-bottom: 10px;
-}
-
-.cta-button {
-    display: inline-block;
-    padding: 12px 28px;
-    background-color: #8cb4ff;
-    color: #0a0a19; /* Texto oscuro para contraste */
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: bold;
-    margin-top: 20px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-size: 1rem;
-}
-
-.cta-button:hover {
-    background-color: #a8c7ff;
-    transform: translateY(-2px);
-}
-
-.contact-options {
-    margin-top: 20px;
-}
-.social-links-contact a {
     color: #c0c0c0;
-    text-decoration: none;
-    margin: 0 15px;
-    font-size: 1.1rem;
-    transition: color 0.3s ease;
 }
-.social-links-contact a:hover {
+.sub-tagline {
+    font-size: 1.1rem;
+    color: #a0a0a0;
+}
+.content-container h2 {
+    font-size: 2.2rem;
+    margin-bottom: 20px;
     color: #8cb4ff;
 }
 
-/* ----- FOOTER ----- */
-.main-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 15px 0;
-    /*  background-color: rgba(10, 10, 25, 0.8); */ /* Estilo original comentado */
-    color: #a0a0a0;
-    text-align: center;
-    font-size: 0.85rem;
-    z-index: 100;
-    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2); */ /* Estilo original comentado */
-}
-
-/* ----- ESTILOS PARA RESPONSIVIDAD (Ejemplo básico) ----- */
-@media (max-width: 768px) {
-    .main-header nav ul {
-        /* Podrías ocultar el menú y mostrar un botón de hamburguesa */
-        /* O simplemente reducir el gap y tamaño de fuente */
-        gap: 15px;
-    }
-    .main-header nav a {
-        font-size: 0.9rem;
-    }
-    .connect-button-header {
-        font-size: 0.8rem;
-        padding: 6px 10px;
-    }
-    .hero-section h1 {
-        /* Se ajustará por clamp, pero puedes afinar más */
-    }
-    /* Más ajustes para móviles aquí */
-}
-
-#loading-indicator {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 20px 40px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    border-radius: 10px;
-    z-index: 10000; /* Por encima de todo */
-    font-size: 1.2rem;
-}
-
-.fade-out {
-    opacity: 0;
-    visibility: hidden; /* Oculta el elemento completamente */
-    pointer-events: none; /* Evita que se pueda interactuar con él */
-    transition: opacity 0.5s ease-out, visibility 0s 0.5s; /* La transición */
-}
-
-/* ----- EFECTO GLITCH FINAL (AMBIENTAL SECUENCIAL + HOVER LEGIBLE) ----- */
+/* ----- EFECTO GLITCH (Copiado de tu versión original) ----- */
 
 /* 1. ESTILOS BASE DEL ENLACE */
 .main-header nav a.nav-glitch {
@@ -331,81 +142,31 @@ body {
     width: 100%;
     height: 100%;
     padding: 10px 15px;
-    background-color: #000033;
+    /* MODIFICACIÓN 2: Fondo de las capas del glitch a transparente */
+    background-color: transparent;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    display: none;
-}
-
-/* 3. ESTADO AMBIENTAL (Idle Glitch) - Activado por JS */
-.main-header nav a.nav-glitch.is-glitching-idle::before,
-.main-header nav a.nav-glitch.is-glitching-idle::after {
     display: block;
 }
 
-.main-header nav a.nav-glitch.is-glitching-idle::before {
-    text-shadow: -1px 0 rgba(255, 255, 255, 0.7);
-    animation: idle-burst-anim 1.5s linear;
-}
-
-.main-header nav a.nav-glitch.is-glitching-idle::after {
-    text-shadow: 1px 0 rgba(255, 255, 255, 0.4);
-    animation: idle-burst-anim 1.5s linear reverse;
-}
-
-/* 4. ESTADO DE INTERACCIÓN (Hover) - LEGIBILIDAD MEJORADA */
+/* 4. ESTADO DE INTERACCIÓN (Hover) */
 .main-header nav a.nav-glitch:hover {
-    /* ELIMINAMOS 'color: transparent;'. El texto base ahora permanece visible */
-    /* Este es el cambio más importante para la legibilidad */
-}
-
-.main-header nav a.nav-glitch:hover::before,
-.main-header nav a.nav-glitch:hover::after {
-    display: block;
-    opacity: 1;
+    /* El texto base permanece visible para legibilidad */
 }
 
 .main-header nav a.nav-glitch:hover::before {
-    /* Capa con Fucsia y Morado Profundo */
     text-shadow: 2px 2px #f000ff, -2px -2px #7000ff;
     animation: hover-glitch-1 5s infinite linear alternate;
 }
 
 .main-header nav a.nav-glitch:hover::after {
-    /* Capa con Cian Eléctrico y Azul Intenso */
     text-shadow: -2px 2px #00e5ff, 2px -2px #0055ff;
     animation: hover-glitch-2 4.5s infinite linear alternate;
 }
 
-/* 5. KEYFRAMES (Movimiento de hover reducido OTRA VEZ) */
-@keyframes idle-burst-anim {
-    0% {
-        clip-path: inset(10% 0 85% 0);
-        transform: translate(-1px, 0);
-    }
-    20% {
-        clip-path: inset(90% 0 5% 0);
-    }
-    40% {
-        clip-path: inset(45% 0 45% 0);
-        transform: translate(1px, 0);
-    }
-    60% {
-        clip-path: inset(20% 0 70% 0);
-    }
-    80% {
-        clip-path: inset(80% 0 10% 0);
-        transform: translate(-1px, 0);
-    }
-    100% {
-        clip-path: inset(5% 0 90% 0);
-    }
-}
-
-/* Keyframes de hover con movimiento más sutil para no tapar el texto base */
-/* <--- TODO ESTE BLOQUE HA SIDO AJUSTADO DE NUEVO --- */
+/* 5. KEYFRAMES (Animaciones) - SIN CAMBIOS */
 @keyframes hover-glitch-1 {
     0% {
         clip-path: inset(35% 0 65% 0);
@@ -457,7 +218,6 @@ body {
     }
 }
 
-/* <--- Y ESTE TAMBIÉN --- */
 @keyframes hover-glitch-2 {
     0% {
         clip-path: inset(8% 0 88% 0);

@@ -268,3 +268,58 @@ body.content-body {
         transform: translate(1px, -1px);
     }
 }
+/* ----- MIRA / CROSSHAIR ----- */
+
+#crosshair-container {
+    position: fixed;
+    pointer-events: none;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+/* Punto central de la mira */
+.crosshair-dot {
+    width: 3px;
+    height: 3px;
+    background-color: #00ff7f; /* Un verde neón muy de ciencia ficción */
+    box-shadow: 0 0 10px #00ff7f; /* Efecto de brillo */
+}
+
+/* Estilo base para las 4 esquinas */
+.crosshair-bracket {
+    position: absolute;
+    width: 15px; /* Ancho de la línea */
+    height: 15px; /* Alto de la línea */
+    border-style: solid;
+    border-color: #00ff7f;
+    box-shadow: 0 0 10px #00ff7f;
+}
+
+/* Posicionamiento y bordes para cada esquina */
+.top-left {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px; /* Borde superior e izquierdo */
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    border-width: 2px 2px 0 0; /* Borde superior y derecho */
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 2px 2px; /* Borde inferior e izquierdo */
+}
+
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    border-width: 0 2px 2px 0; /* Borde inferior y derecho */
+}

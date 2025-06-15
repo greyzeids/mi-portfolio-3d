@@ -5,7 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 // --- Configuración Esencial de Three.js ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-    75,
+    60,
     window.innerWidth / window.innerHeight,
     0.1,
     1000
@@ -80,10 +80,11 @@ const PHYSICS_INTERPOLATION_FACTOR = 0.3;
 const TILT_AMOUNT = 0.25;
 const BANK_AMOUNT = 0.5;
 const VISUAL_SMOOTHING = 0.05;
+const RETICLE_DISTANCE = 150;
 
 // --- Variables para el Zoom ---
-let cameraZoomLevel = 10;
-const MIN_ZOOM = 4;
+let cameraZoomLevel = 2;
+const MIN_ZOOM = 1;
 const MAX_ZOOM = 25;
 const ZOOM_SENSITIVITY = 0.005;
 
@@ -91,6 +92,9 @@ let cameraLookAtTarget = new THREE.Vector3();
 const targetPosition = new THREE.Vector3();
 const targetQuaternion = new THREE.Quaternion();
 let originalLinearDamping;
+
+// --- Elementos del DOM cacheados ---
+const crosshair = document.getElementById("crosshair-container");
 
 function loadPlayerModel() {
     return new Promise((resolve, reject) => {
@@ -124,6 +128,9 @@ async function initializeScene() {
         player.visual.scale.set(0.5, 0.5, 0.5);
         player.visual.rotation.y = Math.PI;
         scene.add(player.visual);
+
+        // const axesHelper = new THREE.AxesHelper(5);
+        // player.visual.add(axesHelper);
 
         const playerShape = new CANNON.Sphere(0.8);
         const initialCannonQuaternion = new CANNON.Quaternion();
@@ -188,6 +195,8 @@ function animate() {
         const currentMoveSpeed = keysPressed["ShiftLeft"]
             ? MOVE_SPEED * BOOST_MULTIPLIER
             : MOVE_SPEED;
+
+        // --- MOVIMIENTO DE TRASLACIÓN (WASD + Espacio/Ctrl/X) ---
         if (keysPressed["KeyW"]) {
             const forwardForce = new CANNON.Vec3(0, 0, currentMoveSpeed);
             player.body.applyLocalForce(forwardForce, CANNON.Vec3.ZERO);
@@ -197,9 +206,13 @@ function animate() {
         } else {
             player.body.linearDamping = originalLinearDamping;
         }
-        if (keysPressed["KeyX"]) {
-            const backwardForce = new CANNON.Vec3(0, 0, -MOVE_SPEED / 2);
-            player.body.applyLocalForce(backwardForce, CANNON.Vec3.ZERO);
+        if (keysPressed["KeyA"]) {
+            const leftForce = new CANNON.Vec3(-currentMoveSpeed, 0, 0);
+            player.body.applyLocalForce(leftForce, CANNON.Vec3.ZERO);
+        }
+        if (keysPressed["KeyD"]) {
+            const rightForce = new CANNON.Vec3(currentMoveSpeed, 0, 0);
+            player.body.applyLocalForce(rightForce, CANNON.Vec3.ZERO);
         }
         if (keysPressed["Space"]) {
             const upForce = new CANNON.Vec3(0, currentMoveSpeed, 0);
@@ -209,17 +222,47 @@ function animate() {
             const downForce = new CANNON.Vec3(0, -currentMoveSpeed, 0);
             player.body.applyLocalForce(downForce, CANNON.Vec3.ZERO);
         }
-        let yaw = 0;
-        if (keysPressed["KeyA"]) yaw = ROTATION_SPEED;
-        if (keysPressed["KeyD"]) yaw = -ROTATION_SPEED;
-        player.body.angularVelocity.y = yaw;
-        let roll = 0;
-        if (keysPressed["KeyQ"]) roll = ROLL_SPEED;
-        if (keysPressed["KeyE"]) roll = -ROLL_SPEED;
-        const rollTorque = new CANNON.Vec3(0, 0, roll);
-        player.body.applyTorque(rollTorque);
+        if (keysPressed["KeyX"]) {
+            const backwardForce = new CANNON.Vec3(0, 0, -MOVE_SPEED / 2);
+            player.body.applyLocalForce(backwardForce, CANNON.Vec3.ZERO);
+        }
+
+        // --- MOVIMIENTO DE ROTACIÓN (Flechas + Q/E) - CON LÍMITE DE PITCH ---
+
+        // 1. Obtenemos el vector "hacia adelante" de la nave
+        const forwardVector = player.body.quaternion.vmult(
+            new CANNON.Vec3(0, 0, 1)
+        );
+        // 2. Definimos el vector "arriba" del mundo
+        const worldUp = new CANNON.Vec3(0, 1, 0);
+        // 3. Calculamos cómo de vertical es la orientación
+        const dot = forwardVector.dot(worldUp);
+
+        const localAngularVelocity = new CANNON.Vec3(0, 0, 0);
+
+        // Pitch (con límite para evitar el salto de la cámara)
+        if (keysPressed["ArrowUp"]) {
+            if (dot < 0.98) localAngularVelocity.x = ROTATION_SPEED;
+        } else if (keysPressed["ArrowDown"]) {
+            if (dot > -0.98) localAngularVelocity.x = -ROTATION_SPEED;
+        }
+
+        // Yaw (Giro)
+        if (keysPressed["ArrowLeft"]) localAngularVelocity.y = ROTATION_SPEED;
+        else if (keysPressed["ArrowRight"])
+            localAngularVelocity.y = -ROTATION_SPEED;
+
+        // Roll (Rotación)
+        if (keysPressed["KeyQ"]) localAngularVelocity.z = ROLL_SPEED;
+        else if (keysPressed["KeyE"]) localAngularVelocity.z = -ROLL_SPEED;
+
+        // Aplicamos la velocidad angular calculada
+        const worldAngularVelocity =
+            player.body.quaternion.vmult(localAngularVelocity);
+        player.body.angularVelocity.copy(worldAngularVelocity);
     }
 
+    // Sincronización entre física y visual
     if (player.visual && player.body) {
         targetPosition.copy(player.body.position);
         targetQuaternion.copy(player.body.quaternion);
@@ -233,17 +276,23 @@ function animate() {
         );
     }
 
+    // Animación cosmética del gimbal
     if (player.gimbal) {
         let targetTilt = 0;
         if (keysPressed["KeyW"]) {
+            targetTilt = TILT_AMOUNT;
+        } else if (keysPressed["KeyX"] || keysPressed["KeyS"]) {
             targetTilt = -TILT_AMOUNT;
         }
+
         let targetBank = 0;
-        if (keysPressed["KeyA"]) {
-            targetBank = -BANK_AMOUNT;
-        } else if (keysPressed["KeyD"]) {
+        // CORREGIDO: La animación de banqueo responde a las teclas de rotación (flechas)
+        if (keysPressed["ArrowLeft"]) {
             targetBank = BANK_AMOUNT;
+        } else if (keysPressed["ArrowRight"]) {
+            targetBank = -BANK_AMOUNT;
         }
+
         player.gimbal.rotation.x = THREE.MathUtils.lerp(
             player.gimbal.rotation.x,
             targetTilt,
@@ -256,9 +305,10 @@ function animate() {
         );
     }
 
+    // Lógica de la cámara
     if (player.visual) {
-        const cameraOffset = new THREE.Vector3(0, 2.5, -cameraZoomLevel);
-
+        // CORREGIDO: El offset en Y y el signo del zoom estaban mal en tu código
+        const cameraOffset = new THREE.Vector3(0, 0, -cameraZoomLevel);
         cameraOffset.applyQuaternion(player.visual.quaternion);
         const targetCameraPosition = player.visual.position
             .clone()
@@ -269,6 +319,21 @@ function animate() {
             CAMERA_LOOK_AT_SMOOTH_SPEED
         );
         camera.lookAt(cameraLookAtTarget);
+    }
+
+    if (player.visual && crosshair) {
+        const reticleTargetPosition = new THREE.Vector3(
+            0,
+            0,
+            -RETICLE_DISTANCE
+        );
+        player.visual.localToWorld(reticleTargetPosition);
+        reticleTargetPosition.project(camera);
+        const x = (reticleTargetPosition.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (reticleTargetPosition.y * -0.5 + 0.5) * window.innerHeight;
+        crosshair.style.transform = `translate(-50%, -50%)`;
+        crosshair.style.left = `${x}px`;
+        crosshair.style.top = `${y}px`;
     }
 
     renderer.render(scene, camera);
